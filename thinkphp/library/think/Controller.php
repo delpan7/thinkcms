@@ -19,46 +19,53 @@ class Controller
     use Jump;
 
     /**
-     * @var \think\View 视图类实例
+     * 视图类实例
+     * @var \think\View
      */
     protected $view;
 
     /**
-     * @var \think\Request Request实例
+     * Request实例
+     * @var \think\Request
      */
     protected $request;
 
     /**
-     * @var \think\App 应用实例
+     * 应用实例
+     * @var \think\App
      */
     protected $app;
 
-    // 验证失败是否抛出异常
+    /**
+     * 验证失败是否抛出异常
+     * @var bool
+     */
     protected $failException = false;
-    // 是否批量验证
+
+    /**
+     * 是否批量验证
+     * @var bool
+     */
     protected $batchValidate = false;
 
     /**
      * 前置操作方法列表
      * @var array $beforeActionList
-     * @access protected
      */
     protected $beforeActionList = [];
 
     /**
      * 构造方法
-     * @param Request $request Request对象
      * @access public
      */
-    public function __construct(Request $request, App $app)
+    public function __construct()
     {
-        $this->view = Container::get('view')->init(
-            $app['config']->pull('template'),
-            $app['config']->get('view_replace_str')
+        $this->request = Container::get('request');
+        $this->app     = Container::get('app');
+        $this->view    = Container::get('view')->init(
+            $this->app['config']->pull('template'),
+            $this->app['config']->get('view_replace_str')
         );
-
-        $this->request = $request;
-        $this->app     = $app;
 
         // 控制器初始化
         $this->initialize();

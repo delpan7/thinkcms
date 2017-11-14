@@ -13,6 +13,10 @@ namespace think;
 
 class Cookie
 {
+    /**
+     * 配置参数
+     * @var array
+     */
     protected $config = [
         // cookie 名称前缀
         'prefix'    => '',
@@ -25,11 +29,15 @@ class Cookie
         //  cookie 启用安全传输
         'secure'    => false,
         // httponly设置
-        'httponly'  => '',
+        'httponly'  => false,
         // 是否使用 setcookie
         'setcookie' => true,
     ];
 
+    /**
+     * 是否初始化
+     * @var bool
+     */
     protected $init;
 
     /**
@@ -73,7 +81,7 @@ class Cookie
      * @param mixed  $value cookie值
      * @param mixed  $option 可选参数 可能会是 null|integer|string
      *
-     * @return mixed
+     * @return void
      * @internal param mixed $options cookie参数
      */
     public function set($name, $value = '', $option = null)
@@ -187,7 +195,7 @@ class Cookie
      * Cookie删除
      * @param string        $name cookie名称
      * @param string|null   $prefix cookie前缀
-     * @return mixed
+     * @return void
      */
     public function delete($name, $prefix = null)
     {
@@ -208,7 +216,7 @@ class Cookie
     /**
      * Cookie清空
      * @param string|null $prefix cookie前缀
-     * @return mixed
+     * @return void
      */
     public function clear($prefix = null)
     {

@@ -11,6 +11,7 @@
 
 namespace think\model\concern;
 
+use think\Collection;
 use think\db\Query;
 use think\Loader;
 use think\Model;
@@ -29,13 +30,28 @@ use think\model\relation\MorphTo;
  */
 trait RelationShip
 {
-    // 父关联模型对象
+    /**
+     * 父关联模型对象
+     * @var object
+     */
     private $parent;
-    // 关联模型
+
+    /**
+     * 模型关联数据
+     * @var array
+     */
     private $relation = [];
-    // 关联写入
+
+    /**
+     * 关联写入定义信息
+     * @var array
+     */
     private $together;
-    // 关联自动写入
+
+    /**
+     * 关联自动写入信息
+     * @var array
+     */
     private $relationWrite;
 
     /**
@@ -317,7 +333,7 @@ trait RelationShip
     {
         // 记录当前关联信息
         $model      = $this->parseModel($model);
-        $foreignKey = $foreignKey ?: $this->getForeignKey($model);
+        $foreignKey = $foreignKey ?: $this->getForeignKey((new $model)->getName());
         $localKey   = $localKey ?: (new $model)->getPk();
         $trace      = debug_backtrace(false, 2);
         $relation   = Loader::parseName($trace[1]['function']);
@@ -360,7 +376,7 @@ trait RelationShip
         $through    = $this->parseModel($through);
         $localKey   = $localKey ?: $this->getPk();
         $foreignKey = $foreignKey ?: $this->getForeignKey($this->name);
-        $throughKey = $throughKey ?: $this->getForeignKey($through);
+        $throughKey = $throughKey ?: $this->getForeignKey((new $through)->getName());
 
         return new HasManyThrough($this, $model, $through, $foreignKey, $throughKey, $localKey);
     }
@@ -411,7 +427,7 @@ trait RelationShip
             $foreignKey = $morph . '_id';
         }
 
-        $type = $type ?: Loader::parseName($this->name);
+        $type = $type ?: get_class($this);
 
         return new MorphOne($this, $model, $foreignKey, $morphType, $type);
     }
@@ -434,7 +450,7 @@ trait RelationShip
             $morph = Loader::parseName($trace[1]['function']);
         }
 
-        $type = $type ?: Loader::parseName($this->name);
+        $type = $type ?: get_class($this);
 
         if (is_array($morph)) {
             list($morphType, $foreignKey) = $morph;

@@ -26,33 +26,71 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     use model\concern\TimeStamp;
     use model\concern\Conversion;
 
-    // 是否为更新数据
+    /**
+     * 是否更新数据
+     * @var bool
+     */
     private $isUpdate = false;
-    // 更新条件
+
+    /**
+     * 更新条件
+     * @var array
+     */
     private $updateWhere;
 
-    // 数据库配置
+    /**
+     * 数据库配置信息
+     * @var array|string
+     */
     protected $connection = [];
-    // 数据库查询类
+
+    /**
+     * 数据库查询对象类名
+     * @var string
+     */
     protected $query;
-    // 当前模型名称
+
+    /**
+     * 模型名称
+     * @var string
+     */
     protected $name;
-    // 数据表名称
+
+    /**
+     * 数据表名称
+     * @var string
+     */
     protected $table;
 
-    // 写入自动完成列表
+    /**
+     * 写入自动完成定义
+     * @var array
+     */
     protected $auto = [];
-    // 新增自动完成列表
+
+    /**
+     * 新增自动完成定义
+     * @var array
+     */
     protected $insert = [];
-    // 更新自动完成列表
+
+    /**
+     * 更新自动完成定义
+     * @var array
+     */
     protected $update = [];
 
     /**
      * 初始化过的模型.
-     *
      * @var array
      */
     protected static $initialized = [];
+
+    /**
+     * 查询对象实例
+     * @var Query
+     */
+    protected $queryInstance;
 
     /**
      * 架构函数
@@ -65,6 +103,15 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             $this->data = get_object_vars($data);
         } else {
             $this->data = $data;
+        }
+
+        if ($this->disuse) {
+            // 废弃字段
+            foreach ((array) $this->disuse as $key) {
+                if (isset($this->data[$key])) {
+                    unset($this->data[$key]);
+                }
+            }
         }
 
         // 记录原始数据
@@ -111,6 +158,16 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     }
 
     /**
+     * 获取当前模型名称
+     * @access public
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
      * 创建新的模型实例
      * @access public
      * @param array|object $data 数据
@@ -152,11 +209,27 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
     /**
      * 获取当前模型的数据库查询对象
      * @access public
+     * @param Query $query 查询对象实例
+     * @return $this
+     */
+    public function setQuery($query)
+    {
+        $this->queryInstance = $query;
+        return $this;
+    }
+
+    /**
+     * 获取当前模型的数据库查询对象
+     * @access public
      * @param bool $useBaseQuery 是否调用全局查询范围
      * @return Query
      */
     public function db($useBaseQuery = true)
     {
+        if ($this->queryInstance) {
+            return $this->queryInstance;
+        }
+
         $query = $this->buildQuery();
 
         if ($useBaseQuery) {
@@ -322,7 +395,7 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
         // 检测字段
         if (empty($this->field) || true === $this->field) {
             $query = $this->db(false);
-            $table = $query->getTable();
+            $table = $this->table ?: $query->getTable();
 
             $this->field = $query->getConnection()->getTableFields($table);
 
@@ -333,6 +406,11 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             if ($this->autoWriteTimestamp) {
                 array_push($field, $this->createTime, $this->updateTime);
             }
+        }
+
+        if ($this->disuse) {
+            // 废弃字段
+            $field = array_diff($field, (array) $this->disuse);
         }
         return $field;
     }
@@ -584,11 +662,11 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
             $this->isUpdate = $update;
 
             if (!empty($where)) {
-                $this->updateWhere = self::parseWhere($where);
+                $this->updateWhere = $where;
             }
         } else {
             $this->isUpdate    = true;
-            $this->updateWhere = self::parseWhere($update);
+            $this->updateWhere = $update;
         }
 
         return $this;
@@ -763,14 +841,14 @@ abstract class Model implements \JsonSerializable, \ArrayAccess
 
         $query = $model->db();
 
-        if (is_array($data) && key($data) !== 0) {
+        if (empty($data) && 0 !== $data) {
+            return 0;
+        } elseif (is_array($data) && key($data) !== 0) {
             $query->where(self::parseWhere($data));
             $data = null;
         } elseif ($data instanceof \Closure) {
             $data($query);
             $data = null;
-        } elseif (empty($data) && 0 !== $data) {
-            return 0;
         }
 
         $resultSet = $query->select($data);

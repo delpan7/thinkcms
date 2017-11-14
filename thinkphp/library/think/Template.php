@@ -20,9 +20,16 @@ use think\exception\TemplateNotFoundException;
  */
 class Template
 {
-    // 模板变量
+    /**
+     * 模板变量
+     * @var array
+     */
     protected $data = [];
-    // 引擎配置
+
+    /**
+     * 模板配置参数
+     * @var array
+     */
     protected $config = [
         'view_path'          => '', // 模板路径
         'view_base'          => '',
@@ -53,8 +60,22 @@ class Template
         'default_filter'     => 'htmlentities', // 默认过滤方法 用于普通标签输出
     ];
 
-    private $literal     = [];
-    private $includeFile = []; // 记录所有模板包含的文件路径及更新时间
+    /**
+     * 保留内容信息
+     * @var array
+     */
+    private $literal = [];
+
+    /**
+     * 模板包含信息
+     * @var array
+     */
+    private $includeFile = [];
+
+    /**
+     * 模板存储对象
+     * @var object
+     */
     protected $storage;
 
     /**
@@ -1059,7 +1080,7 @@ class Template
                     case 'raw':
                         continue;
                     case 'date':
-                        $name = 'date(' . $args[1] . ',strtotime(' . $name . ') ?: ' . $name . ')';
+                        $name = 'date(' . $args[1] . ',!is_numeric(' . $name . ')? strtotime(' . $name . ') : ' . $name . ')';
                         break;
                     case 'first':
                         $name = 'current(' . $name . ')';
@@ -1159,7 +1180,7 @@ class Template
                     $parseStr = "date('Y-m-d g:i a',time())";
                     break;
                 case 'VERSION':
-                    $parseStr = 'THINK_VERSION';
+                    $parseStr = 'app()->version()';
                     break;
                 case 'LDELIM':
                     $parseStr = '\'' . ltrim($this->config['tpl_begin'], '\\') . '\'';

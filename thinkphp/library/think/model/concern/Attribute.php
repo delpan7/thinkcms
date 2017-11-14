@@ -17,18 +17,46 @@ use think\model\Relation;
 
 trait Attribute
 {
-    // 数据表主键 复合主键使用数组定义
+    /**
+     * 数据表主键 复合主键使用数组定义
+     * @var string|array
+     */
     protected $pk = 'id';
-    // 数据表字段信息 留空则自动获取
+
+    /**
+     * 数据表字段信息 留空则自动获取
+     * @var array
+     */
     protected $field = [];
-    // 只读字段
+
+    /**
+     * 数据表废弃字段
+     * @var array
+     */
+    protected $disuse = [];
+
+    /**
+     * 数据表只读字段
+     * @var array
+     */
     protected $readonly = [];
-    // 字段类型或者格式转换
+
+    /**
+     * 数据表字段类型
+     * @var array
+     */
     protected $type = [];
 
-    // 当前数据
+    /**
+     * 当前模型数据
+     * @var array
+     */
     private $data = [];
-    // 原始数据
+
+    /**
+     * 原始数据
+     * @var array
+     */
     private $origin = [];
 
     /**
@@ -116,6 +144,12 @@ trait Attribute
                 // 数据对象赋值
                 foreach ($data as $key => $value) {
                     $this->setAttr($key, $value, $data);
+                }
+            } elseif (is_array($value)) {
+                foreach ($value as $name) {
+                    if (isset($data[$name])) {
+                        $this->data[$name] = $data[$name];
+                    }
                 }
             } else {
                 $this->data = $data;
@@ -364,10 +398,11 @@ trait Attribute
      * 获取器 获取数据对象的值
      * @access public
      * @param string $name 名称
+     * @param array  $item 数据
      * @return mixed
      * @throws InvalidArgumentException
      */
-    public function getAttr($name)
+    public function getAttr($name, &$item = null)
     {
         try {
             $notFound = false;
@@ -408,15 +443,28 @@ trait Attribute
                 if ($modelRelation instanceof Relation) {
                     $value = $this->getRelationData($modelRelation);
 
+                    if ($item && method_exists($modelRelation, 'getBindAttr') && $bindAttr = $modelRelation->getBindAttr()) {
+
+                        foreach ($bindAttr as $key => $attr) {
+                            $key = is_numeric($key) ? $attr : $key;
+
+                            if (isset($item[$key])) {
+                                throw new Exception('bind attr has exists:' . $key);
+                            } else {
+                                $item[$key] = $value ? $value->getAttr($attr) : null;
+                            }
+                        }
+                        return false;
+                    }
+
                     // 保存关联对象值
                     $this->relation[$name] = $value;
+
                     return $value;
                 }
             }
-
             throw new InvalidArgumentException('property not exists:' . static::class . '->' . $name);
         }
-
         return $value;
     }
 

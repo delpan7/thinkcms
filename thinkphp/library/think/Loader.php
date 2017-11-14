@@ -13,23 +13,44 @@ namespace think;
 
 class Loader
 {
-    // 类名映射
+    /**
+     * 类名映射信息
+     * @var array
+     */
     protected static $map = [];
 
-    // 类库别名
+    /**
+     * 类库别名
+     * @var array
+     */
     protected static $classAlias = [];
 
-    // PSR-4
+    /**
+     * PSR-4
+     * @var array
+     */
     private static $prefixLengthsPsr4 = [];
     private static $prefixDirsPsr4    = [];
     private static $fallbackDirsPsr4  = [];
 
-    // PSR-0
+    /**
+     * PSR-0
+     * @var array
+     */
     private static $prefixesPsr0     = [];
     private static $fallbackDirsPsr0 = [];
 
-    // 自动加载的文件
+    /**
+     * 自动加载的文件列表
+     * @var array
+     */
     private static $autoloadFiles = [];
+
+    /**
+     * Composer安装路径
+     * @var string
+     */
+    private static $composerPath;
 
     // 注册自动加载机制
     public static function register($autoload = '')
@@ -44,7 +65,7 @@ class Loader
         ]);
 
         $path = dirname($_SERVER['SCRIPT_FILENAME']);
-        if (PHP_SAPI == 'cli') {
+        if (is_file('./think')) {
             $rootPath = realpath($path) . '/';
         } else {
             $rootPath = realpath($path . '/../') . '/';
@@ -55,9 +76,11 @@ class Loader
             self::addClassMap(__include_file($rootPath . 'runtime/classmap.php'));
         }
 
+        self::$composerPath = $rootPath . 'vendor/composer/';
+
         // Composer自动加载支持
-        if (is_dir($rootPath . 'vendor/composer')) {
-            self::registerComposerLoader($rootPath . 'vendor/composer/');
+        if (is_dir(self::$composerPath)) {
+            self::registerComposerLoader(self::$composerPath);
         }
 
         // 自动加载extend目录
@@ -290,9 +313,13 @@ class Loader
                 self::addClassMap($classMap);
             }
         }
+    }
 
-        if (is_file($composerPath . 'autoload_files.php')) {
-            $includeFiles = require $composerPath . 'autoload_files.php';
+    // 加载composer autofile文件
+    public static function loadComposerAutoloadFiles()
+    {
+        if (is_file(self::$composerPath . 'autoload_files.php')) {
+            $includeFiles = require self::$composerPath . 'autoload_files.php';
             foreach ($includeFiles as $fileIdentifier => $file) {
                 if (empty(self::$autoloadFiles[$fileIdentifier])) {
                     __require_file($file);

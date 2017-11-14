@@ -19,6 +19,10 @@ use JsonSerializable;
 
 class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSerializable
 {
+    /**
+     * 数据集数据
+     * @var array
+     */
     protected $items = [];
 
     public function __construct($items = [])
@@ -148,6 +152,21 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
     }
 
     /**
+     * 在数组结尾插入一个元素
+     * @param mixed  $value
+     * @param mixed  $key
+     * @return void
+     */
+    public function push($value, $key = null)
+    {
+        if (is_null($key)) {
+            $this->items[] = $value;
+        } else {
+            $this->items[$key] = $value;
+        }
+    }
+
+    /**
      * 把一个数组分割为新的数组块.
      *
      * @param  int  $size
@@ -167,9 +186,9 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     /**
      * 在数组开头插入一个元素
-     * @param mixed $value
-     * @param null  $key
-     * @return int
+     * @param mixed  $value
+     * @param mixed  $key
+     * @return void
      */
     public function unshift($value, $key = null)
     {
@@ -217,8 +236,8 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     /**
      * 返回数组中指定的一列
-     * @param      $column_key
-     * @param null $index_key
+     * @param mixed     $column_key
+     * @param mixed     $index_key
      * @return array
      */
     public function column($column_key, $index_key = null)

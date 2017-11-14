@@ -107,7 +107,7 @@ trait SoftDelete
         $query = self::withTrashed();
 
         if (is_array($data) && key($data) !== 0) {
-            $query->where($this->parseWhere($data));
+            $query->where(self::parseWhere($data));
             $data = null;
         } elseif ($data instanceof \Closure) {
             call_user_func_array($data, [ & $query]);
@@ -141,7 +141,7 @@ trait SoftDelete
 
         if (empty($where)) {
             $pk         = $this->getPk();
-            $where[$pk] = $this->getData($pk);
+            $where[$pk] = [$pk, '=', $this->getData($pk)];
         }
 
         // 恢复删除

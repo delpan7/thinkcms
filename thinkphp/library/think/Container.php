@@ -13,11 +13,22 @@ namespace think;
 
 class Container
 {
-    // 容器对象实例
+    /**
+     * 容器对象实例
+     * @var Container
+     */
     protected static $instance;
-    // 容器中的对象实例
+
+    /**
+     * 容器中的对象实例
+     * @var array
+     */
     protected $instances = [];
-    // 容器中绑定的对象标识
+
+    /**
+     * 容器绑定标识
+     * @var array
+     */
     protected $bind = [];
 
     /**
@@ -38,7 +49,7 @@ class Container
      * 获取容器中的对象实例
      * @access public
      * @param string        $abstract       类名或者标识
-     * @param array|true    $args           变量
+     * @param array|true    $vars           变量
      * @param bool          $newInstance    是否每次创建新的实例
      * @return object
      */

@@ -57,12 +57,11 @@ abstract class OneToOne extends Relation
      */
     public function eagerly(Query $query, $relation, $subRelation, $closure, $first)
     {
-        $name  = Loader::parseName(basename(str_replace('\\', '/', $query->getModel())));
-        $alias = $name;
+        $name = Loader::parseName(basename(str_replace('\\', '/', get_class($this->parent))));
 
         if ($first) {
             $table = $query->getTable();
-            $query->table([$table => $alias]);
+            $query->table([$table => $name]);
 
             if ($query->getOptions('field')) {
                 $field = $query->getOptions('field');
@@ -71,7 +70,7 @@ abstract class OneToOne extends Relation
                 $field = true;
             }
 
-            $query->field($field, false, $table, $alias);
+            $query->field($field, false, $table, $name);
         }
 
         // 预载入封装
@@ -80,14 +79,14 @@ abstract class OneToOne extends Relation
         $query->via($joinAlias);
 
         if ($this instanceof BelongsTo) {
-            $query->join($joinTable . ' ' . $joinAlias, $alias . '.' . $this->foreignKey . '=' . $joinAlias . '.' . $this->localKey, $this->joinType);
+            $query->join($joinTable . ' ' . $joinAlias, $name . '.' . $this->foreignKey . '=' . $joinAlias . '.' . $this->localKey, $this->joinType);
         } else {
-            $query->join($joinTable . ' ' . $joinAlias, $alias . '.' . $this->localKey . '=' . $joinAlias . '.' . $this->foreignKey, $this->joinType);
+            $query->join($joinTable . ' ' . $joinAlias, $name . '.' . $this->localKey . '=' . $joinAlias . '.' . $this->foreignKey, $this->joinType);
         }
 
         if ($closure) {
             // 执行闭包查询
-            call_user_func_array($closure, [ & $query]);
+            $closure($query);
             // 使用withField指定获取关联的字段，如
             // $query->where(['id'=>1])->withField('id,name');
             if ($query->getOptions('with_field')) {
@@ -226,6 +225,16 @@ abstract class OneToOne extends Relation
     }
 
     /**
+     * 获取绑定属性
+     * @access public
+     * @return array
+     */
+    public function getBindAttr()
+    {
+        return $this->bindAttr;
+    }
+
+    /**
      * 关联统计
      * @access public
      * @param Model    $result  数据对象
@@ -276,13 +285,12 @@ abstract class OneToOne extends Relation
      * @access protected
      * @param Model $model    关联模型对象
      * @param Model $result   父模型对象
-     * @param array $bindAttr 绑定属性
      * @return void
      * @throws Exception
      */
-    protected function bindAttr($model, &$result, $bindAttr)
+    protected function bindAttr($model, &$result)
     {
-        foreach ($bindAttr as $key => $attr) {
+        foreach ($this->bindAttr as $key => $attr) {
             $key = is_numeric($key) ? $attr : $key;
             if (isset($result->$key)) {
                 throw new Exception('bind attr has exists:' . $key);
@@ -295,7 +303,6 @@ abstract class OneToOne extends Relation
     /**
      * 一对一 关联模型预查询（IN方式）
      * @access public
-     * @param object        $model       关联模型对象
      * @param array         $where       关联预查询条件
      * @param string        $key         关联键名
      * @param string        $relation    关联名
@@ -303,17 +310,18 @@ abstract class OneToOne extends Relation
      * @param bool|\Closure $closure
      * @return array
      */
-    protected function eagerlyWhere($model, $where, $key, $relation, $subRelation = '', $closure = false)
+    protected function eagerlyWhere($where, $key, $relation, $subRelation = '', $closure = false)
     {
         // 预载入关联查询 支持嵌套预载入
         if ($closure) {
-            call_user_func_array($closure, [ & $model]);
-            if ($field = $model->getOptions('with_field')) {
-                $model->field($field)->removeOption('with_field');
+            $closure($this->query);
+
+            if ($field = $this->query->getOptions('with_field')) {
+                $this->query->field($field)->removeOption('with_field');
             }
         }
 
-        $list = $model->where($where)->with($subRelation)->select();
+        $list = $this->query->where($where)->with($subRelation)->select();
 
         // 组装模型数据
         $data = [];
@@ -325,11 +333,4 @@ abstract class OneToOne extends Relation
         return $data;
     }
 
-    /**
-     * 执行基础查询（仅执行一次）
-     * @access protected
-     * @return void
-     */
-    protected function baseQuery()
-    {}
 }

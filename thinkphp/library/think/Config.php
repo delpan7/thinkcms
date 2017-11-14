@@ -13,9 +13,16 @@ namespace think;
 
 class Config
 {
-    // 配置参数
+    /**
+     * 配置参数
+     * @var array
+     */
     private $config = [];
-    // 当前参数前缀（一级配置名）
+
+    /**
+     * 缓存前缀
+     * @var string
+     */
     private $prefix = 'app';
 
     /**
@@ -49,7 +56,7 @@ class Config
     }
 
     /**
-     * 加载配置文件（PHP格式）
+     * 加载配置文件（多种格式）
      * @access public
      * @param string    $file 配置文件名
      * @param string    $name 配置名（如设置即表示二级配置）
@@ -70,6 +77,31 @@ class Config
             }
         } else {
             return $this->config;
+        }
+    }
+
+    /**
+     * 自动加载配置文件（PHP格式）
+     * @access public
+     * @param string    $name 配置名
+     * @return void
+     */
+    protected function autoLoad($name)
+    {
+        // 如果尚未载入 则动态加载配置文件
+        $module = Container::get('request')->module();
+        $module = $module ? $module . '/' : '';
+        $app    = Container::get('app');
+        $path   = $app->getAppPath() . $module;
+
+        if (is_dir($path . 'config')) {
+            $file = $path . 'config/' . $name . $app->getConfigExt();
+        } elseif (is_dir($app->getConfigPath() . $module)) {
+            $file = $app->getConfigPath() . $module . $name . $app->getConfigExt();
+        }
+
+        if (isset($file) && is_file($file)) {
+            $this->load($file, $name);
         }
     }
 
@@ -98,6 +130,11 @@ class Config
     {
         $name = strtolower($name);
 
+        if (!isset($this->config[$name])) {
+            // 如果尚未载入 则动态加载配置文件
+            $this->autoLoad($name);
+        }
+
         return isset($this->config[$name]) ? $this->config[$name] : [];
     }
 
@@ -116,6 +153,8 @@ class Config
 
         if (!strpos($name, '.')) {
             $name = $this->prefix . '.' . $name;
+        } elseif ('.' == substr($name, -1)) {
+            return $this->pull(substr($name, 0, -1));
         }
 
         $name   = explode('.', strtolower($name));
@@ -123,18 +162,7 @@ class Config
 
         if (!isset($config[$name[0]])) {
             // 如果尚未载入 则动态加载配置文件
-            $module = Container::get('request')->module();
-            $module = $module ? $module . '/' : '';
-            $path   = Container::get('app')->getAppPath() . $module;
-            if (is_dir($path . 'config')) {
-                $file = $path . 'config/' . $name[0] . Container::get('app')->getConfigExt();
-            } elseif (is_dir(Container::get('app')->getConfigPath() . $module)) {
-                $file = Container::get('app')->getConfigPath() . $module . $name[0] . Container::get('app')->getConfigExt();
-            }
-
-            if (isset($file) && is_file($file)) {
-                $this->load($file, $name[0]);
-            }
+            $this->autoLoad($name[0]);
         }
 
         // 按.拆分成多维数组进行判断

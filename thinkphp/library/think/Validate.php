@@ -16,80 +16,106 @@ use think\validate\ValidateRule;
 
 class Validate
 {
-    // 自定义的验证类型
+
+    /**
+     * 自定义验证类型
+     * @var array
+     */
     protected static $type = [];
 
-    // 验证类型别名
+    /**
+     * 验证类型别名
+     * @var array
+     */
     protected $alias = [
         '>' => 'gt', '>=' => 'egt', '<' => 'lt', '<=' => 'elt', '=' => 'eq', 'same' => 'eq',
     ];
 
-    // 当前验证的规则
+    /**
+     * 当前验证规则
+     * @var array
+     */
     protected $rule = [];
 
-    // 验证提示信息
+    /**
+     * 验证提示信息
+     * @var array
+     */
     protected $message = [];
-    // 验证字段描述
+
+    /**
+     * 验证字段描述
+     * @var array
+     */
     protected $field = [];
 
-    // 验证规则默认提示信息
+    /**
+     * 默认规则提示
+     * @var array
+     */
     protected static $typeMsg = [
-        'require'     => ':attribute不能为空',
-        'must'        => ':attribute必须',
-        'number'      => ':attribute必须是数字',
-        'integer'     => ':attribute必须是整数',
-        'float'       => ':attribute必须是浮点数',
-        'boolean'     => ':attribute必须是布尔值',
-        'email'       => ':attribute格式不符',
-        'mobile'      => ':attribute格式不符',
-        'array'       => ':attribute必须是数组',
-        'accepted'    => ':attribute必须是yes、on或者1',
-        'date'        => ':attribute不是一个有效的日期或时间格式',
-        'file'        => ':attribute不是有效的上传文件',
-        'image'       => ':attribute不是有效的图像文件',
-        'alpha'       => ':attribute只能是字母',
-        'alphaNum'    => ':attribute只能是字母和数字',
-        'alphaDash'   => ':attribute只能是字母、数字和下划线_及破折号-',
-        'activeUrl'   => ':attribute不是有效的域名或者IP',
-        'chs'         => ':attribute只能是汉字',
-        'chsAlpha'    => ':attribute只能是汉字、字母',
-        'chsAlphaNum' => ':attribute只能是汉字、字母和数字',
-        'chsDash'     => ':attribute只能是汉字、字母、数字和下划线_及破折号-',
-        'url'         => ':attribute不是有效的URL地址',
-        'ip'          => ':attribute不是有效的IP地址',
-        'dateFormat'  => ':attribute必须使用日期格式 :rule',
-        'in'          => ':attribute必须在 :rule 范围内',
-        'notIn'       => ':attribute不能在 :rule 范围内',
-        'between'     => ':attribute只能在 :1 - :2 之间',
-        'notBetween'  => ':attribute不能在 :1 - :2 之间',
-        'length'      => ':attribute长度不符合要求 :rule',
-        'max'         => ':attribute长度不能超过 :rule',
-        'min'         => ':attribute长度不能小于 :rule',
-        'after'       => ':attribute日期不能小于 :rule',
-        'before'      => ':attribute日期不能超过 :rule',
-        'expire'      => '不在有效期内 :rule',
-        'allowIp'     => '不允许的IP访问',
-        'denyIp'      => '禁止的IP访问',
-        'confirm'     => ':attribute和确认字段:2不一致',
-        'different'   => ':attribute和比较字段:2不能相同',
-        'egt'         => ':attribute必须大于等于 :rule',
-        'gt'          => ':attribute必须大于 :rule',
-        'elt'         => ':attribute必须小于等于 :rule',
-        'lt'          => ':attribute必须小于 :rule',
-        'eq'          => ':attribute必须等于 :rule',
-        'unique'      => ':attribute已存在',
-        'regex'       => ':attribute不符合指定规则',
-        'method'      => '无效的请求类型',
-        'token'       => '令牌数据无效',
-        'fileSize'    => '上传文件大小不符',
-        'fileExt'     => '上传文件后缀不符',
-        'fileMime'    => '上传文件类型不符',
+        'require'     => ':attribute require',
+        'must'        => ':attribute must',
+        'number'      => ':attribute must be numeric',
+        'integer'     => ':attribute must be integer',
+        'float'       => ':attribute must be float',
+        'boolean'     => ':attribute must be bool',
+        'email'       => ':attribute not a valid email address',
+        'mobile'      => ':attribute not a valid mobile',
+        'array'       => ':attribute must be a array',
+        'accepted'    => ':attribute must be yes,on or 1',
+        'date'        => ':attribute not a valid datetime',
+        'file'        => ':attribute not a valid file',
+        'image'       => ':attribute not a valid image',
+        'alpha'       => ':attribute must be alpha',
+        'alphaNum'    => ':attribute must be alpha-numeric',
+        'alphaDash'   => ':attribute must be alpha-numeric, dash, underscore',
+        'activeUrl'   => ':attribute not a valid domain or ip',
+        'chs'         => ':attribute must be chinese',
+        'chsAlpha'    => ':attribute must be chinese or alpha',
+        'chsAlphaNum' => ':attribute must be chinese,alpha-numeric',
+        'chsDash'     => ':attribute must be chinese,alpha-numeric,underscore, dash',
+        'url'         => ':attribute not a valid url',
+        'ip'          => ':attribute not a valid ip',
+        'dateFormat'  => ':attribute must be dateFormat of :rule',
+        'in'          => ':attribute must be in :rule',
+        'notIn'       => ':attribute be notin :rule',
+        'between'     => ':attribute must between :1 - :2',
+        'notBetween'  => ':attribute not between :1 - :2',
+        'length'      => 'size of :attribute must be :rule',
+        'max'         => 'max size of :attribute must be :rule',
+        'min'         => 'min size of :attribute must be :rule',
+        'after'       => ':attribute cannot be less than :rule',
+        'before'      => ':attribute cannot exceed :rule',
+        'expire'      => ':attribute not within :rule',
+        'allowIp'     => 'access IP is not allowed',
+        'denyIp'      => 'access IP denied',
+        'confirm'     => ':attribute out of accord with :2',
+        'different'   => ':attribute cannot be same with :2',
+        'egt'         => ':attribute must greater than or equal :rule',
+        'gt'          => ':attribute must greater than :rule',
+        'elt'         => ':attribute must less than or equal :rule',
+        'lt'          => ':attribute must less than :rule',
+        'eq'          => ':attribute must equal :rule',
+        'unique'      => ':attribute has exists',
+        'regex'       => ':attribute not conform to the rules',
+        'method'      => 'invalid Request method',
+        'token'       => 'invalid token',
+        'fileSize'    => 'filesize not match',
+        'fileExt'     => 'extensions to upload is not allowed',
+        'fileMime'    => 'mimetype to upload is not allowed',
     ];
 
-    // 当前验证场景
+    /**
+     * 当前验证场景
+     * @var array
+     */
     protected $currentScene = null;
 
-    // 正则表达式 regex = ['zip'=>'\d{6}',...]
+    /**
+     * 内置正则验证规则
+     * @var array
+     */
     protected $regex = [
         'alpha'       => '/^[A-Za-z]+$/',
         'alphaNum'    => '/^[A-Za-z0-9]+$/',
@@ -103,7 +129,10 @@ class Validate
         'zip'         => '/\d{6}/',
     ];
 
-    // Filter_var 验证规则
+    /**
+     * Filter_var 规则
+     * @var array
+     */
     protected $filter = [
         'email'   => FILTER_VALIDATE_EMAIL,
         'ip'      => [FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6],
@@ -113,18 +142,40 @@ class Validate
         'float'   => FILTER_VALIDATE_FLOAT,
     ];
 
-    // 验证场景 scene = ['edit'=>'name1,name2,...']
+    /**
+     * 验证场景定义
+     * @var array
+     */
     protected $scene = [];
 
-    // 验证失败错误信息
+    /**
+     * 验证失败错误信息
+     * @var array
+     */
     protected $error = [];
 
-    // 批量验证
+    /**
+     * 是否批量验证
+     * @var bool
+     */
     protected $batch = false;
 
-    // 验证参数
-    protected $only   = [];
+    /**
+     * 场景需要验证的规则
+     * @var array
+     */
+    protected $only = [];
+
+    /**
+     * 场景需要移除的验证规则
+     * @var array
+     */
     protected $remove = [];
+
+    /**
+     * 场景需要追加的验证规则
+     * @var array
+     */
     protected $append = [];
 
     /**
@@ -684,8 +735,12 @@ class Validate
         if (function_exists('exif_imagetype')) {
             return exif_imagetype($image);
         } else {
-            $info = getimagesize($image);
-            return $info[2];
+            try {
+                $info = getimagesize($image);
+                return $info ? $info[2] : false;
+            } catch (\Exception $e) {
+                return false;
+            }
         }
     }
 
@@ -900,20 +955,20 @@ class Validate
             // 支持多个字段验证
             $fields = explode('^', $key);
             foreach ($fields as $key) {
-                $map[$key] = $data[$key];
+                $map[] = [$key, '=', $data[$key]];
             }
-        } elseif (strpos($key, '=')) {
-            parse_str($key, $map);
         } else {
-            $map[$key] = $data[$field];
+            $map[] = [$key, '=', $data[$field]];
         }
 
-        $pk = strval(isset($rule[3]) ? $rule[3] : $db->getPk());
+        $pk = strval(!empty($rule[3]) ? $rule[3] : $db->getPk());
 
-        if (isset($rule[2])) {
-            $map[$pk] = ['neq', $rule[2]];
-        } elseif (isset($data[$pk])) {
-            $map[$pk] = ['neq', $data[$pk]];
+        if (is_string($pk)) {
+            if (isset($rule[2])) {
+                $map[] = [$pk, '<>', $rule[2]];
+            } elseif (isset($data[$pk])) {
+                $map[] = [$pk, '<>', $data[$pk]];
+            }
         }
 
         if ($db->where($map)->field($pk)->find()) {
@@ -1303,6 +1358,8 @@ class Validate
      */
     protected function getRuleMsg($attribute, $title, $type, $rule)
     {
+        $lang = Container::get('lang');
+
         if (isset($this->message[$attribute . '.' . $type])) {
             $msg = $this->message[$attribute . '.' . $type];
         } elseif (isset($this->message[$attribute][$type])) {
@@ -1314,11 +1371,13 @@ class Validate
         } elseif (0 === strpos($type, 'require')) {
             $msg = self::$typeMsg['require'];
         } else {
-            $msg = $title . '规则错误';
+            $msg = $title . $lang->get('not conform to the rules');
         }
 
         if (is_string($msg) && 0 === strpos($msg, '{%')) {
-            $msg = Container::get('lang')->get(substr($msg, 2, -1));
+            $msg = $lang->get(substr($msg, 2, -1));
+        } elseif ($lang->has($msg)) {
+            $msg = $lang->get($msg);
         }
 
         if (is_string($msg) && is_scalar($rule) && false !== strpos($msg, ':')) {

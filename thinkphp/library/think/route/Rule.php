@@ -32,6 +32,8 @@ abstract class Rule
     protected $option = [];
     // 路由变量规则
     protected $pattern = [];
+    // 需要合并的路由参数
+    protected $mergeOptions = ['after', 'before', 'model'];
 
     abstract public function check($request, $url, $depr = '/');
 
@@ -272,6 +274,18 @@ abstract class Rule
     }
 
     /**
+     * 设置需要合并的路由参数
+     * @access public
+     * @param array     $option
+     * @return $this
+     */
+    public function mergeOptions($option = [])
+    {
+        $this->mergeOptions = array_merge($this->mergeOptions, $option);
+        return $this;
+    }
+
+    /**
      * 检查是否为HTTPS请求
      * @access public
      * @param bool     $https
@@ -359,29 +373,21 @@ abstract class Rule
     }
 
     /**
-     * 解析路由变量
-     * @access public
-     * @param array    $rule 路由规则
-     * @param array    $paths URL
-     * @return array
+     * 合并分组参数
+     * @access protected
+     * @return void
      */
-    protected function parseRuleVars($rule, &$paths)
+    protected function mergeGroupOptions()
     {
-        $matches = [];
-        foreach ($rule as $item) {
-            $fun = '';
-            if (0 === strpos($item, '[:')) {
-                $item = substr($item, 1, -1);
-            }
-            if (0 === strpos($item, ':')) {
-                $var           = substr($item, 1);
-                $matches[$var] = array_shift($paths);
-            } else {
-                // 过滤URL中的静态变量
-                array_shift($paths);
+        $parentOption = $this->parent->getOption();
+        // 合并分组参数
+        foreach ($this->mergeOptions as $item) {
+            if (isset($parentOption[$item]) && isset($this->option[$item])) {
+                $this->option[$item] = array_merge($parentOption[$item], $this->option[$item]);
             }
         }
-        return $matches;
+
+        $this->option = array_merge($parentOption, $this->option);
     }
 
     /**
@@ -414,7 +420,7 @@ abstract class Rule
                         $match = false;
                         break;
                     } else {
-                        $where[$field] = $matches[$field];
+                        $where[] = [$field, '=', $matches[$field]];
                     }
                 }
 
@@ -464,17 +470,6 @@ abstract class Rule
      */
     public function parseRule($request, $rule, $route, $url, $option = [], $matches = [])
     {
-        // 解析路由规则
-        if ($rule) {
-            $rule = explode('/', $rule);
-            // 获取URL地址中的参数
-            $paths   = explode('|', $url);
-            $matches = $this->parseRuleVars($rule, $paths);
-        } else {
-            $paths   = explode('|', $url);
-            $matches = [];
-        }
-
         if (is_string($route) && isset($option['prefix'])) {
             // 路由地址前缀
             $route = $option['prefix'] . $route;
@@ -505,7 +500,9 @@ abstract class Rule
         }
 
         // 解析额外参数
-        $this->parseUrlParams(empty($paths) ? '' : implode('|', $paths), $matches);
+        $count = substr_count($rule, '/');
+        $url   = array_slice(explode('|', $url), $count + 1);
+        $this->parseUrlParams(implode('|', $url), $matches);
 
         // 记录匹配的路由信息
         $request->routeInfo(['rule' => $rule, 'route' => $route, 'option' => $option, 'var' => $matches]);
@@ -564,6 +561,27 @@ abstract class Rule
         if (!$v->check($request->param())) {
             throw new ValidateException($v->getError());
         }
+    }
+
+    /**
+     * 检查路由前置行为
+     * @access protected
+     * @param mixed   $before 前置行为
+     * @return mixed
+     */
+    protected function checkBefore($before)
+    {
+
+        $hook = Container::get('hook');
+
+        foreach ((array) $before as $behavior) {
+            $result = $hook->exec($behavior);
+
+            if (false === $result) {
+                return false;
+            }
+        }
+
     }
 
     /**
@@ -675,20 +693,6 @@ abstract class Rule
      */
     protected function checkOption($option, Request $request)
     {
-        if (!empty($option['before'])) {
-            // 路由前置检查
-            $before = $option['before'];
-            $hook   = Container::get('hook');
-
-            foreach ((array) $before as $behavior) {
-                $result = $hook->exec($behavior);
-
-                if (false === $result) {
-                    return false;
-                }
-            }
-        }
-
         // 请求类型检测
         if (!empty($option['method'])) {
             if (is_string($option['method']) && false === stripos($option['method'], $request->method())) {

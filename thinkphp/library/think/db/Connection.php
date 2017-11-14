@@ -285,7 +285,9 @@ abstract class Connection
      */
     public function getFieldBindType($type)
     {
-        if (preg_match('/(int|double|float|decimal|real|numeric|serial|bit)/is', $type)) {
+        if (0 === strpos($type, 'set') || 0 === strpos($type, 'enum')) {
+            $bind = PDO::PARAM_STR;
+        } elseif (preg_match('/(int|double|float|decimal|real|numeric|serial|bit)/is', $type)) {
             $bind = PDO::PARAM_INT;
         } elseif (preg_match('/bool/is', $type)) {
             $bind = PDO::PARAM_BOOL;
@@ -745,7 +747,7 @@ abstract class Connection
         $pk      = $query->getPk($options);
 
         if (!empty($options['cache']) && true === $options['cache']['key'] && is_string($pk) && isset($options['where']['AND'][$pk])) {
-            $key = $this->getCacheKey($options['where']['AND'][$pk], $options, $query->getBind(false));
+            $key = $this->getCacheKey($options['where']['AND'][$pk], $options);
         }
 
         $data   = $options['data'];
@@ -755,12 +757,10 @@ abstract class Connection
             // 判断查询缓存
             $cache = $options['cache'];
 
-            if (true === $cache['key'] && !is_null($data) && !is_array($data)) {
-                $key = 'think:' . (is_array($options['table']) ? key($options['table']) : $options['table']) . '|' . $data;
-            } elseif (is_string($cache['key'])) {
+            if (is_string($cache['key'])) {
                 $key = $cache['key'];
             } elseif (!isset($key)) {
-                $key = md5(serialize($options) . serialize($query->getBind(false)));
+                $key = $this->getCacheKey($data, $options, $query->getBind(false));
             }
 
             $result = Container::get('cache')->get($key);
@@ -948,9 +948,10 @@ abstract class Connection
      * @param Query     $query      查询对象
      * @param mixed     $dataSet    数据集
      * @param bool      $replace    是否replace
+     * @param integer   $limit      每次写入数据限制
      * @return integer|string
      */
-    public function insertAll(Query $query, $dataSet = [], $replace = false)
+    public function insertAll(Query $query, $dataSet = [], $replace = false, $limit = null)
     {
         if (!is_array(reset($dataSet))) {
             return false;
@@ -959,13 +960,23 @@ abstract class Connection
         $options = $query->getOptions();
 
         // 生成SQL语句
-        $sql = $this->builder->insertAll($query, $dataSet, $replace);
+        if (is_null($limit)) {
+            $sql = $this->builder->insertAll($query, $dataSet, $replace);
+        } else {
+            $array = array_chunk($dataSet, $limit, true);
+            foreach ($array as $item) {
+                $sql[] = $this->builder->insertAll($query, $item, $replace);
+            }
+        }
 
         $bind = $query->getBind();
 
         if ($options['fetch_sql']) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
+        } elseif (is_array($sql)) {
+            // 执行操作
+            return $this->batchQuery($sql, $bind);
         } else {
             // 执行操作
             return $this->execute($sql, $bind);
@@ -1026,7 +1037,7 @@ abstract class Connection
             if (is_string($pk) && isset($data[$pk])) {
                 $where[$pk] = [$pk, '=', $data[$pk]];
                 if (!isset($key)) {
-                    $key = 'think:' . $options['table'] . '|' . $data[$pk];
+                    $key = $this->getCacheKey($data[$pk], $options);
                 }
                 unset($data[$pk]);
             } elseif (is_array($pk)) {
@@ -1050,7 +1061,7 @@ abstract class Connection
                 $query->setOption('where', ['AND' => $where]);
             }
         } elseif (!isset($key) && is_string($pk) && isset($options['where']['AND'][$pk])) {
-            $key = $this->getCacheKey($options['where']['AND'][$pk], $options, $query->getBind(false));
+            $key = $this->getCacheKey($options['where']['AND'][$pk], $options);
         }
 
         // 更新数据
@@ -1106,22 +1117,14 @@ abstract class Connection
         // 分析查询表达式
         $options = $query->getOptions();
         $pk      = $query->getPk($options);
+        $data    = $options['data'];
 
-        $data = $options['data'];
         if (isset($options['cache']) && is_string($options['cache']['key'])) {
             $key = $options['cache']['key'];
-        }
-
-        if (!is_null($data) && true !== $data) {
-            if (!isset($key) && !is_array($data)) {
-                // 缓存标识
-                $key = 'think:' . $options['table'] . '|' . $data;
-            }
-
-            // AR模式分析主键条件
-            $query->parsePkWhere($data);
-        } elseif (!isset($key) && is_string($pk) && isset($options['where']['AND'][$pk])) {
-            $key = $this->getCacheKey($options['where']['AND'][$pk], $options, $query->getBind(false));
+        } elseif (!is_null($data) && true !== $data && !is_array($data)) {
+            $key = $this->getCacheKey($data, $options);
+        } elseif (is_string($pk) && isset($options['where']['AND'][$pk])) {
+            $key = $this->getCacheKey($options['where']['AND'][$pk], $options);
         }
 
         if (true !== $data && empty($options['where'])) {
@@ -1354,12 +1357,16 @@ abstract class Connection
      */
     public function getRealSql($sql, array $bind = [])
     {
+        if (is_array($sql)) {
+            $sql = implode(';', $sql);
+        }
+
         foreach ($bind as $key => $val) {
             $value = is_array($val) ? $val[0] : $val;
             $type  = is_array($val) ? $val[1] : PDO::PARAM_STR;
 
             if (PDO::PARAM_STR == $type) {
-                $value = $this->quote($value);
+                $value = '\'' . addslashes($value) . '\'';
             } elseif (PDO::PARAM_INT == $type) {
                 $value = (float) $value;
             }
@@ -1368,8 +1375,8 @@ abstract class Connection
             $sql = is_numeric($key) ?
             substr_replace($sql, $value, strpos($sql, '?'), 1) :
             str_replace(
-                [':' . $key . ')', ':' . $key . ',', ':' . $key . ' '],
-                [$value . ')', $value . ',', $value . ' '],
+                [':' . $key . ')', ':' . $key . ',', ':' . $key . ' ', ':' . $key . PHP_EOL],
+                [$value . ')', $value . ',', $value . ' ', $value . PHP_EOL],
                 $sql . ' ');
         }
 
@@ -1628,10 +1635,11 @@ abstract class Connection
      * 批处理执行SQL语句
      * 批处理的指令都认为是execute操作
      * @access public
-     * @param array $sqlArray SQL批处理指令
+     * @param array $sqlArray   SQL批处理指令
+     * @param array $bind       参数绑定
      * @return boolean
      */
-    public function batchQuery($sqlArray = [])
+    public function batchQuery($sqlArray = [], $bind = [])
     {
         if (!is_array($sqlArray)) {
             return false;
@@ -1642,7 +1650,7 @@ abstract class Connection
 
         try {
             foreach ($sqlArray as $sql) {
-                $this->execute($sql);
+                $this->execute($sql, $bind);
             }
             // 提交事务
             $this->commit();
@@ -1775,20 +1783,6 @@ abstract class Connection
         }
 
         return $error;
-    }
-
-    /**
-     * SQL指令安全过滤
-     * @access public
-     * @param string $str SQL字符串
-     * @param bool   $master 是否主库查询
-     * @return string
-     */
-    public function quote($str, $master = true)
-    {
-        $this->initConnect($master);
-
-        return $this->linkID ? $this->linkID->quote($str) : $str;
     }
 
     /**
@@ -1992,12 +1986,10 @@ abstract class Connection
     {
         if (is_scalar($value)) {
             $data = $value;
-        } elseif (is_array($value) && 'eq' == strtolower($value[0])) {
-            $data = $value[1];
         }
 
         if (isset($data)) {
-            return 'think:' . $options['table'] . '|' . $data;
+            return 'think:' . (is_array($options['table']) ? key($options['table']) : $options['table']) . '|' . $data;
         } else {
             return md5(serialize($options) . serialize($bind));
         }

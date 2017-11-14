@@ -16,80 +16,176 @@ use think\exception\HttpResponseException;
 class Request
 {
     /**
-     * @var object 对象实例
+     * 对象实例
+     * @var object
      */
     protected $instance;
+
+    /**
+     * 配置对象
+     * @var Config
+     */
     protected $config;
 
-    protected $method;
     /**
-     * @var string 域名（含协议和端口）
+     * 请求类型
+     * @var string
+     */
+    protected $method;
+
+    /**
+     * 域名（含协议及端口）
+     * @var string
      */
     protected $domain;
 
     /**
-     * @var string URL地址
+     * 当前URL地址
+     * @var string
      */
     protected $url;
 
     /**
-     * @var string 基础URL
+     * 基础URL
+     * @var string
      */
     protected $baseUrl;
 
     /**
-     * @var string 当前执行的文件
+     * 当前执行的文件
+     * @var string
      */
     protected $baseFile;
 
     /**
-     * @var string 访问的ROOT地址
+     * 访问的ROOT地址
+     * @var string
      */
     protected $root;
 
     /**
-     * @var string pathinfo
+     * pathinfo
+     * @var string
      */
     protected $pathinfo;
 
     /**
-     * @var string pathinfo（不含后缀）
+     * pathinfo（不含后缀）
+     * @var string
      */
     protected $path;
 
     /**
-     * @var array 当前路由信息
+     * 当前路由信息
+     * @var array
      */
     protected $routeInfo = [];
 
     /**
-     * @var array 当前调度信息
+     * 当前调度信息
+     * @var string
      */
     protected $dispatch = [];
+
+    /**
+     * 当前模块名
+     * @var string
+     */
     protected $module;
+
+    /**
+     * 当前控制器名
+     * @var string
+     */
     protected $controller;
+
+    /**
+     * 当前操作名
+     * @var string
+     */
     protected $action;
-    // 当前语言集
+
+    /**
+     * 当前语言集
+     * @var string
+     */
     protected $langset;
 
     /**
-     * @var array 请求参数
+     * 当前请求参数
+     * @var array
      */
-    protected $param   = [];
-    protected $get     = [];
-    protected $post    = [];
-    protected $request = [];
-    protected $route   = [];
-    protected $put;
-    protected $session = [];
-    protected $file    = [];
-    protected $cookie  = [];
-    protected $server  = [];
-    protected $env     = [];
-    protected $header  = [];
+    protected $param = [];
 
     /**
-     * @var array 资源类型
+     * 当前GET参数
+     * @var array
+     */
+    protected $get = [];
+
+    /**
+     * 当前POST参数
+     * @var array
+     */
+    protected $post = [];
+
+    /**
+     * 当前REQUEST参数
+     * @var array
+     */
+    protected $request = [];
+
+    /**
+     * 当前ROUTE参数
+     * @var array
+     */
+    protected $route = [];
+
+    /**
+     * 当前PUT参数
+     * @var array
+     */
+    protected $put;
+
+    /**
+     * 当前SESSION参数
+     * @var array
+     */
+    protected $session = [];
+
+    /**
+     * 当前FILE参数
+     * @var array
+     */
+    protected $file = [];
+
+    /**
+     * 当前COOKIE参数
+     * @var array
+     */
+    protected $cookie = [];
+
+    /**
+     * 当前SERVER参数
+     * @var array
+     */
+    protected $server = [];
+
+    /**
+     * 当前ENV参数
+     * @var array
+     */
+    protected $env = [];
+
+    /**
+     * 当前HEADER参数
+     * @var array
+     */
+    protected $header = [];
+
+    /**
+     * 资源类型定义
+     * @var array
      */
     protected $mimeType = [
         'xml'   => 'application/xml,text/xml,application/x-xml',
@@ -106,17 +202,41 @@ class Request
         'html'  => 'text/html,application/xhtml+xml,*/*',
     ];
 
+    /**
+     * 当前请求内容
+     * @var string
+     */
     protected $content;
 
-    // 全局过滤规则
+    /**
+     * 全局过滤规则
+     * @var array
+     */
     protected $filter;
-    // Hook扩展方法
+
+    /**
+     * 扩展方法
+     * @var array
+     */
     protected static $hook = [];
+
+    /**
+     * php://input内容
+     * @var string
+     */
     // php://input
     protected $input;
-    // 请求缓存
+
+    /**
+     * 请求缓存
+     * @var array
+     */
     protected $cache;
-    // 缓存是否检查
+
+    /**
+     * 缓存是否检查
+     * @var bool
+     */
     protected $isCheckCache;
 
     /**
@@ -257,7 +377,7 @@ class Request
      * 设置或获取当前包含协议的域名
      * @access public
      * @param string $domain 域名
-     * @return string
+     * @return string|$this
      */
     public function domain($domain = null)
     {
@@ -275,7 +395,7 @@ class Request
      * 设置或获取当前完整URL 包括QUERY_STRING
      * @access public
      * @param string|true $url URL地址 true 带域名获取
-     * @return string
+     * @return string|$this
      */
     public function url($url = null)
     {
@@ -303,7 +423,7 @@ class Request
      * 设置或获取当前URL 不含QUERY_STRING
      * @access public
      * @param string $url URL地址
-     * @return string
+     * @return string|$this
      */
     public function baseUrl($url = null)
     {
@@ -322,7 +442,7 @@ class Request
      * 设置或获取当前执行的文件 SCRIPT_NAME
      * @access public
      * @param string $file 当前执行的文件
-     * @return string
+     * @return string|$this
      */
     public function baseFile($file = null)
     {
@@ -355,7 +475,7 @@ class Request
      * 设置或获取URL访问根地址
      * @access public
      * @param string $url URL地址
-     * @return string
+     * @return string|$this
      */
     public function root($url = null)
     {
@@ -1396,6 +1516,10 @@ class Request
      */
     public function host()
     {
+        if (isset($_SERVER['HTTP_X_REAL_HOST'])) {
+            return $_SERVER['HTTP_X_REAL_HOST'];
+        }
+
         return $this->server('HTTP_HOST');
     }
 

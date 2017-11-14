@@ -18,10 +18,34 @@ use think\Container;
  */
 abstract class Driver
 {
-    protected $handler    = null;
-    protected $readTimes  = 0;
+    /**
+     * 驱动句柄
+     * @var object
+     */
+    protected $handler = null;
+
+    /**
+     * 缓存读取次数
+     * @var integer
+     */
+    protected $readTimes = 0;
+
+    /**
+     * 缓存写入次数
+     * @var integer
+     */
     protected $writeTimes = 0;
-    protected $options    = [];
+
+    /**
+     * 缓存参数
+     * @var array
+     */
+    protected $options = [];
+
+    /**
+     * 缓存标签
+     * @var string
+     */
     protected $tag;
 
     /**
@@ -105,6 +129,7 @@ abstract class Driver
     public function pull($name)
     {
         $result = $this->get($name, false);
+
         if ($result) {
             $this->rm($name);
             return $result;
@@ -124,8 +149,10 @@ abstract class Driver
     public function remember($name, $value, $expire = null)
     {
         if (!$this->has($name)) {
-            while ($this->has($name . '_lock')) {
+            $time = time();
+            while ($time + 5 > time() && $this->has($name . '_lock')) {
                 // 存在锁定则等待
+                usleep(200000);
             }
 
             try {
@@ -143,8 +170,11 @@ abstract class Driver
                 // 解锁
                 $this->rm($name . '_lock');
             } catch (\Exception $e) {
-                // 解锁
                 $this->rm($name . '_lock');
+                throw $e;
+            } catch (\throwable $e) {
+                $this->rm($name . '_lock');
+                throw $e;
             }
         } else {
             $value = $this->get($name);
@@ -198,7 +228,9 @@ abstract class Driver
     {
         if ($this->tag) {
             $key       = 'tag_' . md5($this->tag);
+            $prev      = $this->tag;
             $this->tag = null;
+
             if ($this->has($key)) {
                 $value   = explode(',', $this->get($key));
                 $value[] = $name;
@@ -206,7 +238,9 @@ abstract class Driver
             } else {
                 $value = $name;
             }
+
             $this->set($key, $value, 0);
+            $this->tag = $prev;
         }
     }
 
@@ -220,6 +254,7 @@ abstract class Driver
     {
         $key   = 'tag_' . md5($tag);
         $value = $this->get($key);
+
         if ($value) {
             return array_filter(explode(',', $value));
         } else {

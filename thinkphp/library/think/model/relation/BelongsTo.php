@@ -46,7 +46,7 @@ class BelongsTo extends OneToOne
     public function getRelation($subRelation = '', $closure = null)
     {
         if ($closure) {
-            call_user_func_array($closure, [ & $this->query]);
+            $closure($this->query);
         }
 
         $foreignKey = $this->foreignKey;
@@ -125,7 +125,7 @@ class BelongsTo extends OneToOne
         }
 
         if (!empty($range)) {
-            $data = $this->eagerlyWhere($this, [
+            $data = $this->eagerlyWhere([
                 [$localKey, 'in', $range],
             ], $localKey, $relation, $subRelation, $closure);
 
@@ -145,11 +145,11 @@ class BelongsTo extends OneToOne
 
                 if (!empty($this->bindAttr)) {
                     // 绑定关联属性
-                    $this->bindAttr($relationModel, $result, $this->bindAttr);
+                    $this->bindAttr($relationModel, $result);
+                } else {
+                    // 设置关联属性
+                    $result->setRelation($attr, $relationModel);
                 }
-
-                // 设置关联属性
-                $result->setRelation($attr, $relationModel);
             }
         }
     }
@@ -167,7 +167,8 @@ class BelongsTo extends OneToOne
     {
         $localKey   = $this->localKey;
         $foreignKey = $this->foreignKey;
-        $data       = $this->eagerlyWhere($this, [
+
+        $data = $this->eagerlyWhere([
             [$localKey, '=', $result->$foreignKey],
         ], $localKey, $relation, $subRelation, $closure);
 
@@ -182,11 +183,11 @@ class BelongsTo extends OneToOne
 
         if (!empty($this->bindAttr)) {
             // 绑定关联属性
-            $this->bindAttr($relationModel, $result, $this->bindAttr);
+            $this->bindAttr($relationModel, $result);
+        } else {
+            // 设置关联属性
+            $result->setRelation(Loader::parseName($relation), $relationModel);
         }
-
-        // 设置关联属性
-        $result->setRelation(Loader::parseName($relation), $relationModel);
     }
 
     /**
