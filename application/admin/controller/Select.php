@@ -1,12 +1,10 @@
 <?php
 namespace app\admin\controller;
 
-
-class Index extends Base
+class Select extends Base
 {
     public function index()
     {
-        
-        return $this->fetch();
     }
+
 }

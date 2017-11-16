@@ -2,7 +2,7 @@
 namespace app\admin\controller;
 
 
-class Index extends Base
+class Model extends Base
 {
     public function index()
     {

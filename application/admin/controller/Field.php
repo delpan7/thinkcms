@@ -1,7 +1,7 @@
 <?php
 namespace app\admin\controller;
 
-class User extends Base
+class Field extends Base
 {
     public function login()
     {
