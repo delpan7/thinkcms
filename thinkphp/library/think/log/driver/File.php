@@ -20,10 +20,10 @@ class File
 {
     protected $config = [
         'time_format' => ' c ',
+        'single'      => false,
         'file_size'   => 2097152,
         'path'        => '',
         'apart_level' => [],
-        'single'      => false,
     ];
 
     protected $writed = [];
@@ -43,7 +43,7 @@ class File
     /**
      * 日志写入接口
      * @access public
-     * @param array $log 日志信息
+     * @param  array $log 日志信息
      * @return bool
      */
     public function save(array $log = [])
@@ -91,16 +91,16 @@ class File
 
     /**
      * 日志写入
-     * @access public
-     * @param array     $message 日志信息
-     * @param string    $destination 日志文件
-     * @param bool      $apart 是否独立文件写入
+     * @access protected
+     * @param  array     $message 日志信息
+     * @param  string    $destination 日志文件
+     * @param  bool      $apart 是否独立文件写入
      * @return bool
      */
     protected function write($message, $destination, $apart = false)
     {
         // 检测日志文件大小，超过配置大小则备份日志文件重新生成
-        if (!$this->config['single'] && is_file($destination) && floor($this->config['file_size']) <= filesize($destination)) {
+        if (is_file($destination) && floor($this->config['file_size']) <= filesize($destination)) {
             rename($destination, dirname($destination) . '/' . time() . '-' . basename($destination));
             $this->writed[$destination] = false;
         }
@@ -119,11 +119,10 @@ class File
             }
 
             $now     = date($this->config['time_format']);
-            $server  = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '0.0.0.0';
-            $remote  = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '0.0.0.0';
+            $ip      = Container::get('request')->ip();
             $method  = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'CLI';
             $uri     = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-            $message = "---------------------------------------------------------------\r\n[{$now}] {$server} {$remote} {$method} {$uri}\r\n" . $message;
+            $message = "---------------------------------------------------------------\r\n[{$now}] {$ip} {$method} {$uri}\r\n" . $message;
 
             $this->writed[$destination] = true;
         }

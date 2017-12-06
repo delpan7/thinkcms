@@ -23,9 +23,25 @@ use MongoDB\Driver\WriteConcern;
 use think\Collection;
 use think\db\Query as BaseQuery;
 use think\Exception;
+use think\mongo\Connection;
 
 class Query extends BaseQuery
 {
+    /**
+     * 架构函数
+     * @access public
+     */
+    public function __construct(Connection $connection = null)
+    {
+        if (is_null($connection)) {
+            $this->connection = Connection::instance();
+        } else {
+            $this->connection = $connection;
+        }
+
+        $this->prefix = $this->connection->getConfig('prefix');
+    }
+
     /**
      * 去除某个查询条件
      * @access public
@@ -325,11 +341,23 @@ class Query extends BaseQuery
         $where = [];
         if (is_null($op) && is_null($condition)) {
             if (is_array($field)) {
-                // 数组批量查询
-                $where = $field;
+                if (key($field) !== 0) {
+                    $where = [];
+                    foreach ($field as $key => $val) {
+                        $where[$key] = !is_scalar($val) ? $val : [$key, '=', $val];
+                    }
+                } else {
+                    // 数组批量查询
+                    $where = $field;
+                }
+
+                if (!empty($where)) {
+                    $this->options['where'][$logic] = isset($this->options['where'][$logic]) ? array_merge($this->options['where'][$logic], $where) : $where;
+                }
+                return;
             } elseif ($field) {
                 // 字符串查询
-                $where[] = ['exp', $field];
+                $where[] = [$fiel, 'null', ''];
             } else {
                 $where = '';
             }
@@ -337,12 +365,12 @@ class Query extends BaseQuery
             $where[$field] = $param;
         } elseif (in_array(strtolower($op), ['null', 'notnull', 'not null'])) {
             // null查询
-            $where[$field] = [$op, ''];
+            $where[$field] = [$field, $op, ''];
         } elseif (is_null($condition)) {
             // 字段相等查询
-            $where[$field] = ['=', $op];
+            $where[$field] = [$field, '=', $op];
         } else {
-            $where[$field] = [$op, $condition];
+            $where[$field] = [$field, $op, $condition];
         }
 
         if (!empty($where)) {
@@ -703,13 +731,14 @@ class Query extends BaseQuery
      * @param integer   $count 每次处理的数据数量
      * @param callable  $callback 处理回调方法
      * @param string    $column 分批处理的字段名
+     * @param  string   $order    字段排序
      * @return boolean
      */
-    public function chunk($count, $callback, $column = null)
+    public function chunk($count, $callback, $column = null, $order = 'asc')
     {
         $column    = $column ?: $this->getPk();
         $options   = $this->getOptions();
-        $resultSet = $this->limit($count)->order($column, 'asc')->select();
+        $resultSet = $this->limit($count)->order($column, $order)->select();
 
         while (!empty($resultSet)) {
             if (false === call_user_func($callback, $resultSet)) {
@@ -719,8 +748,8 @@ class Query extends BaseQuery
             $lastId    = is_array($end) ? $end[$column] : $end->$column;
             $resultSet = $this->options($options)
                 ->limit($count)
-                ->where($column, '>', $lastId)
-                ->order($column, 'asc')
+                ->where($column, 'asc' == strtolower($order) ? '>' : '<', $lastId)
+                ->order($column, $order)
                 ->select();
         }
         return true;
@@ -771,7 +800,7 @@ class Query extends BaseQuery
             $options['limit'] = 0;
         }
 
-        foreach (['master', 'fetch_cursor'] as $name) {
+        foreach (['master', 'fetch_sql', 'fetch_cursor'] as $name) {
             if (!isset($options[$name])) {
                 $options[$name] = false;
             }

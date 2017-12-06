@@ -122,10 +122,10 @@ abstract class Connection
 
     /**
      * 架构函数 读取数据库配置信息
-     * @access protected
-     * @param array $config 数据库配置数组
+     * @access public
+     * @param  array $config 数据库配置数组
      */
-    protected function __construct(array $config = [])
+    public function __construct(array $config = [])
     {
         if (!empty($config)) {
             $this->config = array_merge($this->config, $config);
@@ -151,8 +151,8 @@ abstract class Connection
     /**
      * 取得数据库连接类实例
      * @access public
-     * @param mixed         $config 连接配置
-     * @param bool|string   $name 连接标识 true 强制重新连接
+     * @param  mixed         $config 连接配置
+     * @param  bool|string   $name 连接标识 true 强制重新连接
      * @return Connection
      * @throws Exception
      */
@@ -201,7 +201,7 @@ abstract class Connection
     /**
      * 设置当前的数据库Builder对象
      * @access protected
-     * @param Builder    $builder
+     * @param  Builder    $builder
      * @return void
      */
     protected function setBuilder(Builder $builder)
@@ -224,7 +224,7 @@ abstract class Connection
     /**
      * 解析pdo连接的dsn信息
      * @access protected
-     * @param array $config 连接信息
+     * @param  array $config 连接信息
      * @return string
      */
     abstract protected function parseDsn($config);
@@ -232,7 +232,7 @@ abstract class Connection
     /**
      * 取得数据表的字段信息
      * @access public
-     * @param string $tableName
+     * @param  string $tableName
      * @return array
      */
     abstract public function getFields($tableName);
@@ -248,7 +248,7 @@ abstract class Connection
     /**
      * SQL性能分析
      * @access protected
-     * @param string $sql
+     * @param  string $sql
      * @return array
      */
     abstract protected function getExplain($sql);
@@ -256,7 +256,7 @@ abstract class Connection
     /**
      * 对返数据表字段信息进行大小写转换出来
      * @access public
-     * @param array $info 字段信息
+     * @param  array $info 字段信息
      * @return array
      */
     public function fieldCase($info)
@@ -280,7 +280,7 @@ abstract class Connection
     /**
      * 获取字段绑定类型
      * @access public
-     * @param string $type 字段类型
+     * @param  string $type 字段类型
      * @return integer
      */
     public function getFieldBindType($type)
@@ -301,7 +301,7 @@ abstract class Connection
     /**
      * 将SQL语句中的__TABLE_NAME__字符串替换成带前缀的表名（小写）
      * @access public
-     * @param string $sql sql语句
+     * @param  string $sql sql语句
      * @return string
      */
     public function parseSqlTable($sql)
@@ -319,8 +319,8 @@ abstract class Connection
     /**
      * 获取数据表信息
      * @access public
-     * @param mixed  $tableName 数据表名 留空自动获取
-     * @param string $fetch     获取信息类型 包括 fields type bind pk
+     * @param  mixed  $tableName 数据表名 留空自动获取
+     * @param  string $fetch     获取信息类型 包括 fields type bind pk
      * @return mixed
      */
     public function getTableInfo($tableName, $fetch = '')
@@ -352,7 +352,7 @@ abstract class Connection
         if (!isset(self::$info[$schema])) {
             // 读取缓存
             $cacheFile = Container::get('app')->getRuntimePath() . 'schema/' . $schema . '.php';
-            if (is_file($cacheFile)) {
+            if (!$this->config['debug'] && is_file($cacheFile)) {
                 $info = include $cacheFile;
             } else {
                 $info = $this->getFields($tableName);
@@ -386,7 +386,7 @@ abstract class Connection
     /**
      * 获取数据表的主键
      * @access public
-     * @param string $tableName 数据表名
+     * @param  string $tableName 数据表名
      * @return string|array
      */
     public function getPk($tableName)
@@ -415,7 +415,7 @@ abstract class Connection
     /**
      * 获取数据库的配置参数
      * @access public
-     * @param string $config 配置名称
+     * @param  string $config 配置名称
      * @return mixed
      */
     public function getConfig($config = '')
@@ -426,8 +426,8 @@ abstract class Connection
     /**
      * 设置数据库的配置参数
      * @access public
-     * @param string|array      $config 配置名称
-     * @param mixed             $value 配置值
+     * @param  string|array      $config 配置名称
+     * @param  mixed             $value 配置值
      * @return void
      */
     public function setConfig($config, $value = '')
@@ -442,9 +442,9 @@ abstract class Connection
     /**
      * 连接数据库方法
      * @access public
-     * @param array         $config 连接参数
-     * @param integer       $linkNum 连接序号
-     * @param array|bool    $autoConnection 是否自动连接主数据库（用于分布式）
+     * @param  array         $config 连接参数
+     * @param  integer       $linkNum 连接序号
+     * @param  array|bool    $autoConnection 是否自动连接主数据库（用于分布式）
      * @return PDO
      * @throws Exception
      */
@@ -521,12 +521,12 @@ abstract class Connection
     /**
      * 执行查询 使用生成器返回数据
      * @access public
-     * @param string    $sql sql指令
-     * @param array     $bind 参数绑定
-     * @param bool      $master 是否在主服务器读操作
-     * @param Model     $model 模型对象实例
-     * @param array     $condition 查询条件
-     * @param mixed     $relation 关联查询
+     * @param  string    $sql sql指令
+     * @param  array     $bind 参数绑定
+     * @param  bool      $master 是否在主服务器读操作
+     * @param  Model     $model 模型对象实例
+     * @param  array     $condition 查询条件
+     * @param  mixed     $relation 关联查询
      * @return \Generator
      */
     public function getCursor($sql, $bind = [], $master = false, $model = null, $condition = null, $relation = null)
@@ -588,14 +588,15 @@ abstract class Connection
     /**
      * 执行查询 返回数据集
      * @access public
-     * @param string    $sql sql指令
-     * @param array     $bind 参数绑定
-     * @param bool      $master 是否在主服务器读操作
-     * @param bool      $pdo 是否返回PDO对象
+     * @param  string    $sql sql指令
+     * @param  array     $bind 参数绑定
+     * @param  bool      $master 是否在主服务器读操作
+     * @param  bool      $pdo 是否返回PDO对象
      * @return array
      * @throws BindParamException
      * @throws \PDOException
      * @throws \Exception
+     * @throws \Throwable
      */
     public function query($sql, $bind = [], $master = false, $pdo = false)
     {
@@ -610,16 +611,16 @@ abstract class Connection
 
         $this->bind = $bind;
 
-        // 释放前次的查询结果
-        if (!empty($this->PDOStatement)) {
-            $this->free();
-        }
-
         Db::$queryTimes++;
 
         try {
             // 调试开始
             $this->debug(true);
+
+            // 释放前次的查询结果
+            if (!empty($this->PDOStatement)) {
+                $this->free();
+            }
 
             // 预处理
             if (empty($this->PDOStatement)) {
@@ -650,6 +651,12 @@ abstract class Connection
             }
 
             throw new PDOException($e, $this->config, $this->getLastsql());
+        } catch (\Throwable $e) {
+            if ($this->isBreak($e)) {
+                return $this->close()->query($sql, $bind, $master, $pdo);
+            }
+
+            throw $e;
         } catch (\Exception $e) {
             if ($this->isBreak($e)) {
                 return $this->close()->query($sql, $bind, $master, $pdo);
@@ -662,12 +669,13 @@ abstract class Connection
     /**
      * 执行语句
      * @access public
-     * @param string        $sql sql指令
-     * @param array         $bind 参数绑定
+     * @param  string        $sql sql指令
+     * @param  array         $bind 参数绑定
      * @return int
      * @throws BindParamException
      * @throws \PDOException
      * @throws \Exception
+     * @throws \Throwable
      */
     public function execute($sql, $bind = [])
     {
@@ -682,15 +690,15 @@ abstract class Connection
 
         $this->bind = $bind;
 
-        //释放前次的查询结果
-        if (!empty($this->PDOStatement) && $this->PDOStatement->queryString != $sql) {
-            $this->free();
-        }
-
         Db::$executeTimes++;
         try {
             // 调试开始
             $this->debug(true);
+
+            //释放前次的查询结果
+            if (!empty($this->PDOStatement) && $this->PDOStatement->queryString != $sql) {
+                $this->free();
+            }
 
             // 预处理
             if (empty($this->PDOStatement)) {
@@ -722,6 +730,12 @@ abstract class Connection
             }
 
             throw new PDOException($e, $this->config, $this->getLastsql());
+        } catch (\Throwable $e) {
+            if ($this->isBreak($e)) {
+                return $this->close()->execute($sql, $bind);
+            }
+
+            throw $e;
         } catch (\Exception $e) {
             if ($this->isBreak($e)) {
                 return $this->close()->execute($sql, $bind);
@@ -734,7 +748,7 @@ abstract class Connection
     /**
      * 查找单条记录
      * @access public
-     * @param Query  $query        查询对象
+     * @param  Query  $query        查询对象
      * @return array|null|\PDOStatement|string
      * @throws DbException
      * @throws ModelNotFoundException
@@ -786,7 +800,7 @@ abstract class Connection
 
             $bind = $query->getBind();
 
-            if ($options['fetch_sql']) {
+            if (!empty($options['fetch_sql'])) {
                 // 获取实际执行的SQL语句
                 return $this->getRealSql($sql, $bind);
             }
@@ -817,7 +831,7 @@ abstract class Connection
     /**
      * 使用游标查询记录
      * @access public
-     * @param Query   $query        查询对象
+     * @param  Query   $query        查询对象
      * @return \Generator
      */
     public function cursor(Query $query)
@@ -840,7 +854,7 @@ abstract class Connection
     /**
      * 查找记录
      * @access public
-     * @param Query   $query        查询对象
+     * @param  Query   $query        查询对象
      * @return array|\PDOStatement|string
      * @throws DbException
      * @throws ModelNotFoundException
@@ -865,7 +879,7 @@ abstract class Connection
 
             $bind = $query->getBind();
 
-            if ($options['fetch_sql']) {
+            if (!empty($options['fetch_sql'])) {
                 // 获取实际执行的SQL语句
                 return $this->getRealSql($sql, $bind);
             }
@@ -893,10 +907,10 @@ abstract class Connection
     /**
      * 插入记录
      * @access public
-     * @param Query   $query        查询对象
-     * @param boolean $replace      是否replace
-     * @param boolean $getLastInsID 返回自增主键
-     * @param string  $sequence     自增序列名
+     * @param  Query   $query        查询对象
+     * @param  boolean $replace      是否replace
+     * @param  boolean $getLastInsID 返回自增主键
+     * @param  string  $sequence     自增序列名
      * @return integer|string
      */
     public function insert(Query $query, $replace = false, $getLastInsID = false, $sequence = null)
@@ -909,7 +923,7 @@ abstract class Connection
 
         $bind = $query->getBind();
 
-        if ($options['fetch_sql']) {
+        if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
         }
@@ -945,10 +959,10 @@ abstract class Connection
     /**
      * 批量插入记录
      * @access public
-     * @param Query     $query      查询对象
-     * @param mixed     $dataSet    数据集
-     * @param bool      $replace    是否replace
-     * @param integer   $limit      每次写入数据限制
+     * @param  Query     $query      查询对象
+     * @param  mixed     $dataSet    数据集
+     * @param  bool      $replace    是否replace
+     * @param  integer   $limit      每次写入数据限制
      * @return integer|string
      */
     public function insertAll(Query $query, $dataSet = [], $replace = false, $limit = null)
@@ -971,7 +985,7 @@ abstract class Connection
 
         $bind = $query->getBind();
 
-        if ($options['fetch_sql']) {
+        if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
         } elseif (is_array($sql)) {
@@ -986,9 +1000,9 @@ abstract class Connection
     /**
      * 通过Select方式插入记录
      * @access public
-     * @param Query     $query      查询对象
-     * @param string    $fields     要插入的数据表字段名
-     * @param string    $table      要插入的数据表名
+     * @param  Query     $query      查询对象
+     * @param  string    $fields     要插入的数据表字段名
+     * @param  string    $table      要插入的数据表名
      * @return integer|string
      * @throws PDOException
      */
@@ -1004,7 +1018,7 @@ abstract class Connection
 
         $bind = $query->getBind();
 
-        if ($options['fetch_sql']) {
+        if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
         } else {
@@ -1016,7 +1030,7 @@ abstract class Connection
     /**
      * 更新记录
      * @access public
-     * @param Query     $query  查询对象
+     * @param  Query     $query  查询对象
      * @return integer|string
      * @throws Exception
      * @throws PDOException
@@ -1071,7 +1085,7 @@ abstract class Connection
         $sql  = $this->builder->update($query);
         $bind = $query->getBind();
 
-        if ($options['fetch_sql']) {
+        if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
         } else {
@@ -1107,7 +1121,7 @@ abstract class Connection
     /**
      * 删除记录
      * @access public
-     * @param Query $query 查询对象
+     * @param  Query $query 查询对象
      * @return int
      * @throws Exception
      * @throws PDOException
@@ -1137,7 +1151,7 @@ abstract class Connection
 
         $bind = $query->getBind();
 
-        if ($options['fetch_sql']) {
+        if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
         }
@@ -1173,9 +1187,9 @@ abstract class Connection
     /**
      * 得到某个字段的值
      * @access public
-     * @param Query     $query 查询对象
-     * @param string    $field   字段名
-     * @param bool      $default   默认值
+     * @param  Query     $query 查询对象
+     * @param  string    $field   字段名
+     * @param  bool      $default   默认值
      * @return mixed
      */
     public function value(Query $query, $field, $default = null)
@@ -1207,7 +1221,7 @@ abstract class Connection
 
             $bind = $query->getBind();
 
-            if ($options['fetch_sql']) {
+            if (!empty($options['fetch_sql'])) {
                 // 获取实际执行的SQL语句
                 return $this->getRealSql($sql, $bind);
             }
@@ -1234,9 +1248,9 @@ abstract class Connection
     /**
      * 得到某个列的数组
      * @access public
-     * @param Query     $query 查询对象
-     * @param string    $field 字段名 多个字段用逗号分隔
-     * @param string    $key   索引
+     * @param  Query     $query 查询对象
+     * @param  string    $field 字段名 多个字段用逗号分隔
+     * @param  string    $key   索引
      * @return array
      */
     public function column(Query $query, $field, $key = '')
@@ -1275,7 +1289,7 @@ abstract class Connection
 
             $bind = $query->getBind();
 
-            if ($options['fetch_sql']) {
+            if (!empty($options['fetch_sql'])) {
                 // 获取实际执行的SQL语句
                 return $this->getRealSql($sql, $bind);
             }
@@ -1339,7 +1353,7 @@ abstract class Connection
 
         $bind = $query->getBind();
 
-        if ($options['fetch_sql']) {
+        if (!empty($options['fetch_sql'])) {
             // 获取实际执行的SQL语句
             return $this->getRealSql($sql, $bind);
         }
@@ -1351,8 +1365,8 @@ abstract class Connection
     /**
      * 根据参数绑定组装最终的SQL语句 便于调试
      * @access public
-     * @param string    $sql 带参数绑定的sql语句
-     * @param array     $bind 参数绑定列表
+     * @param  string    $sql 带参数绑定的sql语句
+     * @param  array     $bind 参数绑定列表
      * @return string
      */
     public function getRealSql($sql, array $bind = [])
@@ -1388,7 +1402,7 @@ abstract class Connection
      * 支持 ['name'=>'value','id'=>123] 对应命名占位符
      * 或者 ['value',123] 对应问号占位符
      * @access public
-     * @param array $bind 要绑定的参数列表
+     * @param  array $bind 要绑定的参数列表
      * @return void
      * @throws BindParamException
      */
@@ -1421,7 +1435,7 @@ abstract class Connection
     /**
      * 存储过程的输入输出参数绑定
      * @access public
-     * @param array $bind 要绑定的参数列表
+     * @param  array $bind 要绑定的参数列表
      * @return void
      * @throws BindParamException
      */
@@ -1453,8 +1467,8 @@ abstract class Connection
     /**
      * 获得数据集数组
      * @access protected
-     * @param bool   $pdo 是否返回PDOStatement
-     * @param bool   $procedure 是否存储过程
+     * @param  bool   $pdo 是否返回PDOStatement
+     * @param  bool   $procedure 是否存储过程
      * @return array
      */
     protected function getResult($pdo = false, $procedure = false)
@@ -1500,7 +1514,7 @@ abstract class Connection
     /**
      * 执行数据库事务
      * @access public
-     * @param callable $callback 数据操作方法回调
+     * @param  callable $callback 数据操作方法回调
      * @return mixed
      * @throws PDOException
      * @throws \Exception
@@ -1613,7 +1627,8 @@ abstract class Connection
 
     /**
      * 生成定义保存点的SQL
-     * @param $name
+     * @access protected
+     * @param  $name
      * @return string
      */
     protected function parseSavepoint($name)
@@ -1623,7 +1638,8 @@ abstract class Connection
 
     /**
      * 生成回滚到保存点的SQL
-     * @param $name
+     * @access protected
+     * @param  $name
      * @return string
      */
     protected function parseSavepointRollBack($name)
@@ -1635,8 +1651,8 @@ abstract class Connection
      * 批处理执行SQL语句
      * 批处理的指令都认为是execute操作
      * @access public
-     * @param array $sqlArray   SQL批处理指令
-     * @param array $bind       参数绑定
+     * @param  array $sqlArray   SQL批处理指令
+     * @param  array $bind       参数绑定
      * @return boolean
      */
     public function batchQuery($sqlArray = [], $bind = [])
@@ -1665,7 +1681,7 @@ abstract class Connection
     /**
      * 获得查询次数
      * @access public
-     * @param boolean $execute 是否包含所有查询
+     * @param  boolean $execute 是否包含所有查询
      * @return integer
      */
     public function getQueryTimes($execute = false)
@@ -1701,7 +1717,7 @@ abstract class Connection
     /**
      * 是否断线
      * @access protected
-     * @param \PDOException|\Exception  $e 异常对象
+     * @param  \PDOException|\Exception  $e 异常对象
      * @return bool
      */
     protected function isBreak($e)
@@ -1746,7 +1762,7 @@ abstract class Connection
     /**
      * 获取最近插入的ID
      * @access public
-     * @param string  $sequence     自增序列名
+     * @param  string  $sequence     自增序列名
      * @return string
      */
     public function getLastInsID($sequence = null)
@@ -1788,8 +1804,8 @@ abstract class Connection
     /**
      * 数据库调试 记录当前SQL及分析性能
      * @access protected
-     * @param boolean $start 调试开始标记 true 开始 false 结束
-     * @param string  $sql 执行的SQL语句 留空自动获取
+     * @param  boolean $start 调试开始标记 true 开始 false 结束
+     * @param  string  $sql 执行的SQL语句 留空自动获取
      * @return void
      */
     protected function debug($start, $sql = '')
@@ -1821,7 +1837,7 @@ abstract class Connection
     /**
      * 监听SQL执行
      * @access public
-     * @param callable $callback 回调方法
+     * @param  callable $callback 回调方法
      * @return void
      */
     public function listen($callback)
@@ -1832,9 +1848,9 @@ abstract class Connection
     /**
      * 触发SQL事件
      * @access protected
-     * @param string    $sql SQL语句
-     * @param float     $runtime SQL运行时间
-     * @param mixed     $explain SQL分析
+     * @param  string    $sql SQL语句
+     * @param  float     $runtime SQL运行时间
+     * @param  mixed     $explain SQL分析
      * @return bool
      */
     protected function triggerSql($sql, $runtime, $explain = [])
@@ -1863,7 +1879,7 @@ abstract class Connection
     /**
      * 初始化数据库连接
      * @access protected
-     * @param boolean $master 是否主服务器
+     * @param  boolean $master 是否主服务器
      * @return void
      */
     protected function initConnect($master = true)
@@ -1892,7 +1908,7 @@ abstract class Connection
     /**
      * 连接分布式服务器
      * @access protected
-     * @param boolean $master 主服务器
+     * @param  boolean $master 主服务器
      * @return PDO
      */
     protected function multiConnect($master = false)
@@ -1948,9 +1964,7 @@ abstract class Connection
     public function __destruct()
     {
         // 释放查询
-        if ($this->PDOStatement) {
-            $this->free();
-        }
+        $this->free();
 
         // 关闭连接
         $this->close();
@@ -1958,10 +1972,10 @@ abstract class Connection
 
     /**
      * 缓存数据
-     * @access public
-     * @param string    $key    缓存标识
-     * @param mixed     $data   缓存数据
-     * @param array     $config 缓存参数
+     * @access protected
+     * @param  string    $key    缓存标识
+     * @param  mixed     $data   缓存数据
+     * @param  array     $config 缓存参数
      */
     protected function cacheData($key, $data, $config = [])
     {
@@ -1976,10 +1990,10 @@ abstract class Connection
 
     /**
      * 生成缓存标识
-     * @access public
-     * @param mixed     $value   缓存数据
-     * @param array     $options 缓存参数
-     * @param array     $bind    绑定参数
+     * @access protected
+     * @param  mixed     $value   缓存数据
+     * @param  array     $options 缓存参数
+     * @param  array     $bind    绑定参数
      * @return string
      */
     protected function getCacheKey($value, $options, $bind = [])
@@ -1998,7 +2012,7 @@ abstract class Connection
     /**
      * 数据库连接参数解析
      * @access private
-     * @param mixed $config
+     * @param  mixed $config
      * @return array
      */
     private static function parseConfig($config)
@@ -2021,7 +2035,7 @@ abstract class Connection
      * DSN解析
      * 格式： mysql://username:passwd@localhost:3306/DbName?param1=val1&param2=val2#utf8
      * @access private
-     * @param string $dsnStr
+     * @param  string $dsnStr
      * @return array
      */
     private static function parseDsnConfig($dsnStr)
