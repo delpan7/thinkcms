@@ -1,0 +1,91 @@
+<div class="layui-elem-quote">
+
+  <a class="layui-btn f_r" href="{:url('Admin/Article/add')}">添加</a>
+
+  栏目：
+  <div class="layui-inline layui-form">
+    <select name="searchCategory" id="searchCategory" lay-filter="aihao" class="">
+      <option value="">请选择</option>
+      {notempty name="category" value=""}
+      {volist name="category" id="cat"}
+        <option value="{$cat.id}" {if condition="$cat['id'] eq $categoryid"} selected="selected" {/if} >{$cat.category_name}</option>
+      {/volist}
+      {/notempty}
+    </select>
+  </div>
+
+  标题：
+  <div class="layui-inline">
+    <input class="layui-input" name="title" value="{$title|default=''}" id="searchTitle" placeholder="“关键字”模糊查询" autocomplete="off" data-rule-required="true"
+      data-msg-required="请输入标题">
+  </div>
+
+  发布日期：
+  <div class="layui-input-inline">
+    <input type="text" name="sDate" id="sDate" value="{$sdate|default=''}" lay-verify="date" placeholder="年-月-日" readonly autocomplete="off"
+      class="layui-input laydate">
+  </div>
+  <div class="layui-input-inline">
+    <input type="text" name="eDate" id="eDate" value="{$edate|default=''}" lay-verify="date" placeholder="年-月-日" readonly autocomplete="off"
+      class="layui-input laydate">
+  </div>
+
+  <button class="layui-btn" data-type="reload" id="searchBtn">搜索</button>
+</div>
+
+<table class="layui-table">
+  <thead>
+    <tr>
+      <th>ID</td>
+        <th>标题</td>
+          <th>栏目</td>
+            <th>浏览量</td>
+              <th>作者</td>
+                <th>状态</td>
+                  <th>发布时间</td>
+                    <th>操作</td>
+    </tr>
+  </thead>
+  <tbody>
+    {notempty name="list" value=""}
+    {volist id="vo" name="list"}
+
+      <tr id="list-{$vo.id}">
+        <td>{$vo.id}</td>
+        <td>
+          {$vo.title} &nbsp;
+          <if condition="$vo['thumb'] neq '' ">
+            <span class="layui-badge layui-bg-blue">图</span>
+          </if>
+          <if condition="$vo['is_recommend'] eq 1">
+            <span class="layui-badge">荐</span>
+          </if>
+
+        </td>
+        <td>{$vo.category_name}</td>
+        <td class="text-center">
+          {$vo.view_count}
+        </td>
+        <td class="text-center">
+          {$vo.copyfrom}
+        </td>
+        <td class="text-center">
+          {$vo.create_time}
+        </td>
+        <td class="text-center">
+          <a href="{:U('Admin/Article/editarticle',array('id'=>$vo['id'] ) )}">编辑</a>
+          <a href="JavaScript:;" onclick="del('{:url('Admin/Article/delArticle')}', {id:'{$vo.id}'} ,delCallback )"> 删除 </a>
+        </td>
+      </tr>
+    {/volist}
+    {/notempty}
+  </tbody>
+</table>
+
+<div class="pagination text-center">
+  <nav>
+    <ul>
+      {$page|default=''}
+    </ul>
+  </nav>
+</div>
